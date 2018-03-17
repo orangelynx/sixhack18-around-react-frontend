@@ -25,6 +25,8 @@ import {
 } from 'react-viro';
 
 import { RNCamera } from 'react-native-camera';
+import { captureScreen} from 'react-native-view-shot';
+import BackgroundTimer from 'react-native-background-timer';
 
 /*
  TODO: Insert your API key below
@@ -73,16 +75,40 @@ export default class ViroSample extends Component {
   }
 
   takePicture = async function() {
-    if (this.camera) {
-      this.camera.takePictureAsync().then(data => {
+      RNCamera.takePictureAsync().then(data => {
         console.log('data: ', data);
       });
-    }
   };
 
   // Replace this function with the contents of _getVRNavigator() or _getARNavigator()
   // if you are building a specific type of experience.
   render() {
+    // Start a timer that runs once after X milliseconds
+    const timeoutId = BackgroundTimer.setTimeout(() => {
+      console.log('tac');
+      captureScreen( {
+        format: "jpg",
+        quality: 0.8,
+        result: "base64"
+      })
+      .then(
+        uri => {
+          console.log(uri)
+          var img_json = JSON.stringify({ "image": uri })
+          fetch('https://sixhackathon2018-server.azurewebsites.net/image', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Content-Length': img_json.length
+              },
+              body: img_json
+            })
+            .then((response) => response.json())
+        },
+        error => console.error("Oops, snapshot failed", error)
+      );
+    }, 5000);
+
     if (this.state.navigatorType == UNSET) {
       return this._getExperienceSelector();
     } else if (this.state.navigatorType == VR_NAVIGATOR_TYPE) {
@@ -123,11 +149,8 @@ export default class ViroSample extends Component {
   // Returns the ViroARSceneNavigator which will start the AR experience
   _getARNavigator() {
     return (
-      <View>
-      {this.renderCamera()}
       <ViroARSceneNavigator {...this.state.sharedProps}
         initialScene={{scene: InitialARScene}} />
-      </View>
     );
   }
   
@@ -148,6 +171,7 @@ export default class ViroSample extends Component {
         style={{
           flex: 1,
         }}
+
         type={this.state.type}
         flashMode={this.state.flash}
         autoFocus={this.state.autoFocus}

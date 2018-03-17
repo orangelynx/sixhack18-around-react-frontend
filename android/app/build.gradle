@@ -141,6 +141,8 @@ android {
 }
 
 dependencies {
+    compile project(':react-native-view-shot')
+    compile project(':react-native-background-timer')
     compile 'com.android.support:multidex:1.0.1'
     compile project(':react-native-camera')
     compile project(':gvr_common')
