@@ -15,12 +15,16 @@ import {
   StyleSheet,
   PixelRatio,
   TouchableHighlight,
+  TouchableOpacity,
+  Slider
 } from 'react-native';
 
 import {
   ViroSceneNavigator,
   ViroARSceneNavigator
 } from 'react-viro';
+
+import { RNCamera } from 'react-native-camera';
 
 /*
  TODO: Insert your API key below
@@ -47,7 +51,19 @@ export default class ViroSample extends Component {
 
     this.state = {
       navigatorType : defaultNavigatorType,
-      sharedProps : sharedProps
+      sharedProps : sharedProps,
+      flash: 'off',
+      zoom: 0,
+      autoFocus: 'on',
+      depth: 0,
+      type: 'back',
+      whiteBalance: 'auto',
+      ratio: '16:9',
+      ratios: [],
+      photoId: 1,
+      showGallery: false,
+      photos: [],
+      faces: []
     }
     this._getExperienceSelector = this._getExperienceSelector.bind(this);
     this._getARNavigator = this._getARNavigator.bind(this);
@@ -56,13 +72,21 @@ export default class ViroSample extends Component {
     this._exitViro = this._exitViro.bind(this);
   }
 
+  takePicture = async function() {
+    if (this.camera) {
+      this.camera.takePictureAsync().then(data => {
+        console.log('data: ', data);
+      });
+    }
+  };
+
   // Replace this function with the contents of _getVRNavigator() or _getARNavigator()
   // if you are building a specific type of experience.
   render() {
     if (this.state.navigatorType == UNSET) {
       return this._getExperienceSelector();
     } else if (this.state.navigatorType == VR_NAVIGATOR_TYPE) {
-      return this._getVRNavigator();
+      return this.renderCamera();
     } else if (this.state.navigatorType == AR_NAVIGATOR_TYPE) {
       return this._getARNavigator();
     }
@@ -111,6 +135,30 @@ export default class ViroSample extends Component {
         initialScene={{scene: InitialVRScene}} onExitViro={this._exitViro}/>
     );
   }
+
+  renderCamera() {
+    return (
+      <RNCamera
+        ref={ref => {
+          this.camera = ref;
+        }}
+        style={{
+          flex: 1,
+        }}
+        type={this.state.type}
+        flashMode={this.state.flash}
+        autoFocus={this.state.autoFocus}
+        zoom={this.state.zoom}
+        whiteBalance={this.state.whiteBalance}
+        ratio={this.state.ratio}
+        faceDetectionLandmarks={RNCamera.Constants.FaceDetection.Landmarks.all}
+        focusDepth={this.state.depth}
+        permissionDialogTitle={'Permission to use camera'}
+        permissionDialogMessage={'We need your permission to use your camera phone'}
+      />
+    );
+  }
+
 
   // This function returns an anonymous/lambda function to be used
   // by the experience selector buttons
