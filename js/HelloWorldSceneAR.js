@@ -1,15 +1,10 @@
 'use strict';
 
 import React, { Component } from 'react';
-
-
 import {StyleSheet, requireNativeComponent, findNodeHandle,
   Platform,
   NativeModules,
   ViewPropTypes} from 'react-native';
-
-
-
 import {
   ViroARScene,
   ViroText,
@@ -48,11 +43,33 @@ export default class HelloWorldSceneAR extends Component {
 
     // Set initial state here
     this.state = {
-      text : "Initializing AR..."
+      text: "Initializing AR...",
+      geo_lat: null,
+      get_lon: null,
+      geo_error: null
     };
 
     // bind 'this' to functions
     this._onInitialized = this._onInitialized.bind(this);
+  }
+
+  componentDidMount() {
+    this.watchId = navigator.geolocation.watchPosition(
+      (position) => {
+        this.setState({
+          text: "Lat: " + position.coords.latitude + ", Lon: " + position.coords.longitude,
+          geo_lat: position.coords.latitude,
+          geo_lon: position.coords.longitude,
+          geo_error: null,
+        });
+      },
+      (error) => this.setState({ error: error.message }),
+      { enableHighAccuracy: true, timeout: 20000, maximumAge: 1000, distanceFilter: 10 },
+    );
+  }
+
+  componentWillUnmount() {
+    navigator.geolocation.clearWatch(this.watchId);
   }
 
   render() {

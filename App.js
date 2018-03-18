@@ -45,7 +45,7 @@ var AR_NAVIGATOR_TYPE = "AR";
 
 // This determines which type of experience to launch in, or UNSET, if the user should
 // be presented with a choice of AR or VR. By default, we offer the user a choice.
-var defaultNavigatorType = UNSET;
+var defaultNavigatorType = AR_NAVIGATOR_TYPE;
 
 export default class ViroSample extends Component {
   constructor() {
@@ -74,26 +74,21 @@ export default class ViroSample extends Component {
     this._exitViro = this._exitViro.bind(this);
   }
 
-  takePicture = async function() {
-      RNCamera.takePictureAsync().then(data => {
-        console.log('data: ', data);
-      });
-  };
-
-  // Replace this function with the contents of _getVRNavigator() or _getARNavigator()
-  // if you are building a specific type of experience.
-  render() {
+  componentDidMount() {
     // Start a timer that runs once after X milliseconds
-    const timeoutId = BackgroundTimer.setTimeout(() => {
+    this.timeoutId = BackgroundTimer.setInterval(() => {
       console.log('tac');
-      captureScreen( {
-        format: "jpg",
-        quality: 0.8,
-        result: "base64"
-      })
-      .then(
-        uri => {
-          console.log(uri)
+      if(this.sceneNavigator) {
+        console.log(this.sceneNavigator.takeScreenshot)
+        this.sceneNavigator.takeScreenshot("test.jpg", false)
+        .then((success, url, error) => {
+            console.log(sucess);
+            console.log(url);
+            console.log(error);
+        });
+      }
+
+      /*
           var img_json = JSON.stringify({ "image": uri })
           fetch('https://sixhackathon2018-server.azurewebsites.net/image', {
               method: 'POST',
@@ -103,12 +98,36 @@ export default class ViroSample extends Component {
               },
               body: img_json
             })
-            .then((response) => response.json())
-        },
-        error => console.error("Oops, snapshot failed", error)
-      );
+            .then((response) => response.json())*/
     }, 5000);
 
+    this.watchId = navigator.geolocation.watchPosition(
+      (position) => {
+        this.setState({
+          geo_lat: position.coords.latitude,
+          geo_lon: position.coords.longitude,
+          geo_error: null,
+        });
+      },
+      (error) => this.setState({ error: error.message }),
+      { enableHighAccuracy: true, timeout: 20000, maximumAge: 1000, distanceFilter: 10 },
+    );
+  }
+
+  componentWillUnmount() {
+    navigator.geolocation.clearWatch(this.watchId);
+    BackgroundTimer.clearTimeout(this.timeoutId);
+  }
+
+  takePicture = async function() {
+      RNCamera.takePictureAsync().then(data => {
+        console.log('data: ', data);
+      });
+  };
+
+  // Replace this function with the contents of _getVRNavigator() or _getARNavigator()
+  // if you are building a specific type of experience.
+  render() {
     if (this.state.navigatorType == UNSET) {
       return this._getExperienceSelector();
     } else if (this.state.navigatorType == VR_NAVIGATOR_TYPE) {
@@ -148,10 +167,10 @@ export default class ViroSample extends Component {
 
   // Returns the ViroARSceneNavigator which will start the AR experience
   _getARNavigator() {
-    return (
-      <ViroARSceneNavigator {...this.state.sharedProps}
-        initialScene={{scene: InitialARScene}} />
-    );
+    this.sceneNavigator = <ViroARSceneNavigator
+     {...this.state.sharedProps}
+      initialScene={{scene: InitialARScene}} />
+    return this.sceneNavigator
   }
   
   // Returns the ViroSceneNavigator which will start the VR experience
